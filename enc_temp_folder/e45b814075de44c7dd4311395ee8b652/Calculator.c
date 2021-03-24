@@ -98,7 +98,7 @@ void parseData(char* data) {
         if (isspace(data[j])) continue;
         if (isalpha(data[j])) {
             tokenOperation[i] = data[j]; i++;
-            if (strcmp(tokenOperation, "sqrt") == 0 || strcmp(tokenOperation, "cos") == 0 || strcmp(tokenOperation, "sin") == 0 || strcmp(tokenOperation, "tg") == 0 || strcmp(tokenOperation, "ctg") == 0 || strcmp(tokenOperation, "arctg") == 0 || strcmp(tokenOperation, "arcctg") == 0 || strcmp(tokenOperation, "arcsin") == 0 || strcmp(tokenOperation, "arccos") == 0) {
+            if (strcmp(tokenOperation, "sqrt") == 0 || strcmp(tokenOperation, "cos") == 0 || strcmp(tokenOperation, "sin") == 0) {
                 i = 0;
                 pushDataOperations(&headOperation, tokenOperation);
                 memset(&tokenOperation, 0, sizeof(tokenOperation));
