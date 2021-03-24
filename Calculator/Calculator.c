@@ -1,17 +1,19 @@
 ﻿#define _CRT_SECURE_NO_WARNINGS
+#define _USE_MATH_DEFINES
 #include <stdio.h>
 #include <string.h>
 #include <locale.h>
 #include <stdlib.h>
 #include <windows.h>
 #include <ctype.h>
+#include < math.h >
 #include "malloc.h"
 
 #define STACK_OVERFLOW  -100
 #define STACK_UNDERFLOW -101
 #define OUT_OF_MEMORY   -102
 
-typedef int T;
+typedef float T;
 typedef char E;
 
 typedef struct DataCalc {
@@ -53,7 +55,7 @@ void pushData(Data** head, T value) {
 }
 
 
-int popData(Data** head) {
+float popData(Data** head) {
     Data* out; T value;
     if (*head == NULL) exit(STACK_UNDERFLOW);
     out = *head;
@@ -105,7 +107,18 @@ void parseData(char* data) {
             }
         }
         else if ('(' == data[j] || ')' == data[j] || '+'  == data[j] || '*' == data[j] || '/'  == data[j] || '-' == data[j] || '^' ==  data[j]) {
-            pushDataOperations(&headOperation, data[j]);
+            if (headOperation == NULL)
+            {
+                pushDataOperations(&headOperation, data[j]);
+            }
+            else if (headOperation != NULL) {
+                if (priority(headOperation) > priority(data[j]))
+                {
+                    int tmp = popData(&headData);
+                    pushData(&headData, count(tmp, (float) headData, data[j]));
+                }
+            }
+            
         }
         else if (isdigit(data[j])) {
             pushData(&headData, data[j]);
@@ -118,9 +131,31 @@ void parseData(char* data) {
     }
 }
 
+int count(float f, float t, char operation) {
+    switch (operation) {
+    case '+': return f + t; break;
+    case '-': return f - t; break;
+    case '*': return f * t; break;
+    case '/': return f / t; break;
+    case '^': return pow(f , t); break;
+    case 'q': return sqrt(f); break; //sqrt
+    case 't': return tan(f); break; //tg
+    case 'c': return cos(f); break; //cos
+    case 's': return sin(f); break; //sin
+    case 'o': return atan(f); break; //arctg
+    case 'i': return ((M_PI_2 - atan(f)) * 180) / M_PI; break; //arcctg
+    case 'u': return asin(f); break; //arcsin
+    case 'p': return acos(f); break; //arccos
+    }
+}
+
+
+
 int main() {
+    Data* headData = NULL;
+    DataOperations* headOperation = NULL;
     char data[256];
-    scanf("%s", data);
+    scanf("%s", &data);
     parseData(data);
     return 0;
 }
