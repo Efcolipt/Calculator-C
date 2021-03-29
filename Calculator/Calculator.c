@@ -13,7 +13,7 @@
 #define STACK_UNDERFLOW -101
 #define OUT_OF_MEMORY   -102
 
-typedef float T;
+typedef char T;
 typedef char E;
 
 typedef struct DataCalc {
@@ -65,14 +65,31 @@ float popData(Data** head) {
     return value;
 }
 
-int priority(char operation) {
-    switch (operation)
+
+T peekData(const Data* head) {
+    if (head == NULL) {
+        exit(STACK_UNDERFLOW);
+    }
+    return head->value;
+}
+
+E peekDataOperations(const DataOperations* head) {
+    if (head == NULL) {
+        exit(STACK_UNDERFLOW);
+    }
+    return head->value;
+}
+
+int priority(const DataOperations* head, const char* current) {
+    int headFlag = 0;
+    int currentFlag = 0;
+    switch ((char) head->value)
     {
-        case '^': return 3; break;
+        case '^': headFlag = 3; break;
         case '+': 
-        case '-': return 1; break;
+        case '-': headFlag = 1; break;
         case '*': 
-        case '/': return 2; break;
+        case '/': headFlag = 2; break;
         case 't':   // tg
         case 'c':   // cos
         case 's':   // sin
@@ -81,47 +98,170 @@ int priority(char operation) {
         case 'o':   // arctg
         case 'i':   // arcctg
         case 'u':   // arcsin
-        case 'p': return 4; break; // arccos
-        case '(': 
-        case ')': return -1; break;
+        case 'p': headFlag = 4; break; // arccos
+    }
+
+    switch ((char)current)
+    {
+    case '^': currentFlag = 3; break;
+    case '+':
+    case '-': currentFlag = 1; break;
+    case '*':
+    case '/': currentFlag = 2; break;
+    case 't':   // tg
+    case 'c':   // cos
+    case 's':   // sin
+    case 'g':   // ctg
+    case 'q':   // sqrt
+    case 'o':   // arctg
+    case 'i':   // arcctg
+    case 'u':   // arcsin
+    case 'p': currentFlag = 4; break; // arccos
+    }
+
+    if (currentFlag > headFlag)
+    {
+        return 1;
+    }
+    else if (currentFlag < headFlag) {
+        return 0;
+    }
+    else {
+        return -1;
     }
 
  
+}
+
+char* whatIsTrigonomy(char* token) {
+    if (!strcmp(token, "sqrt")) {
+        return 'q';
+    }
+    else if (!strcmp(token, "cos")) {
+        return 'c';
+    }
+    else if (!strcmp(token, "sin")) {
+        return 's';
+    }
+    else if (!strcmp(token, "tg")) {
+        return 't';
+    }
+    else if (!strcmp(token, "ctg")) {
+        return 'g';
+    }
+    else if (!strcmp(token, "arctg")) {
+        return 'o';
+    }
+    else if (!strcmp(token, "arcctg")) {
+        return 'i';
+    }
+    else if (!strcmp(token, "arcsin")) {
+        return 'u';
+    }
+    else if (!strcmp(token, "arccos")) {
+        return 'p';
+    }
+    return '_';
 }
 
 void parseData(char* data) {
     Data* headData = NULL;
     DataOperations* headOperation = NULL;
 
+    char digitTmp[1000] = {0};
     char tokenOperation[10] = "";
-    int i = 0;
+    size_t k = 0, s = 0, j = 0, i = 0;
 
-    for (unsigned int j = 0; data[j]; j++) {
+    for (j = 0; data[j] != '\0'; j++) {
         if (isspace(data[j])) continue;
         if (isalpha(data[j])) {
             tokenOperation[i] = data[j]; i++;
-            if (strcmp(tokenOperation, "sqrt") == 0 || strcmp(tokenOperation, "cos") == 0 || strcmp(tokenOperation, "sin") == 0 || strcmp(tokenOperation, "tg") == 0 || strcmp(tokenOperation, "ctg") == 0 || strcmp(tokenOperation, "arctg") == 0 || strcmp(tokenOperation, "arcctg") == 0 || strcmp(tokenOperation, "arcsin") == 0 || strcmp(tokenOperation, "arccos") == 0) {
+            if (!isalpha(data[j + 1]) && whatIsTrigonomy(tokenOperation) != "_") {
                 i = 0;
-                pushDataOperations(&headOperation, tokenOperation);
+                pushDataOperations(&headOperation, whatIsTrigonomy(tokenOperation));
                 memset(&tokenOperation, 0, sizeof(tokenOperation));
             }
         }
         else if ('(' == data[j] || ')' == data[j] || '+'  == data[j] || '*' == data[j] || '/'  == data[j] || '-' == data[j] || '^' ==  data[j]) {
-            if (headOperation == NULL)
+            if ('(' == headOperation->value || ')' == headOperation->value || '(' == data[j] || ')' == data[j])
+            {
+                pushDataOperations(&headOperation, data[j]);
+            }
+            else if (headOperation == NULL)
             {
                 pushDataOperations(&headOperation, data[j]);
             }
             else if (headOperation != NULL) {
-                if (priority(headOperation) > priority(data[j]))
+                if (priority(&headOperation, data[j])) // если прошлая операция больше текущего
                 {
-                    int tmp = popData(&headData);
-                    pushData(&headData, count(tmp, (float) headData, data[j]));
+                    float num1 = popData(&headData);
+                    float num2 = popData(&headData);
+                    switch ((char) headOperation->value) {
+                    case '+': pushData(&headData, (float)num1 + num2); popDataOperations(&headOperation); break;
+                    case '-': pushData(&headData, (float)num1 - num2); popDataOperations(&headOperation); break;
+                    case '*': pushData(&headData, (float)num1 * num2); popDataOperations(&headOperation); break;
+                    case '/': pushData(&headData, (float)num1 / num2); popDataOperations(&headOperation); break;
+                    case '^': pushData(&headData, (float)pow(num1, num2)); popDataOperations(&headOperation); break;
+                    case 'q': pushData(&headData, (float)sqrt(num1)); popDataOperations(&headOperation); break; //sqrt
+                    case 't': pushData(&headData, (float)tan(num1)); popDataOperations(&headOperation); break; //tg
+                    case 'c': pushData(&headData, (float)cos(num1)); popDataOperations(&headOperation); break; //cos
+                    case 'g': pushData(&headData, (float)1/tan(num1)); popDataOperations(&headOperation); break; // ctg
+                    case 's': pushData(&headData, (float)sin(num1)); popDataOperations(&headOperation); break; //sin
+                    case 'o': pushData(&headData, (float)atan(num1)); popDataOperations(&headOperation); break; //arctg
+                    case 'i': pushData(&headData, (float)atan(((M_PI_2 - atan(num1)) * 180) / M_PI)); popDataOperations(&headOperation); break; //arcctg
+                    case 'u': pushData(&headData, (float)asin(num1)); popDataOperations(&headOperation); break; //arcsin
+                    case 'p': pushData(&headData, (float)acos(num1)); popDataOperations(&headOperation); break; //arccos
+                    }
+
+                }
+                else if (priority(headOperation, data[j]) == -1) { // если прошлая операция равна текущей
+                    for (; priority(headOperation , data[j]) && ((char)headOperation->value != '(' && headOperation->value != ')');)
+                    {
+                        float num1 = popData(&headData);
+                        float num2 = popData(&headData);
+                        switch ((char) headOperation->value) {
+                        case '+': pushData(&headData, (float)num1 + num2); popDataOperations(&headOperation); break;
+                        case '-': pushData(&headData, (float)num1 - num2); popDataOperations(&headOperation); break;
+                        case '*': pushData(&headData, (float)num1 * num2); popDataOperations(&headOperation); break;
+                        case '/': pushData(&headData, (float)num1 / num2); popDataOperations(&headOperation); break;
+                        case '^': pushData(&headData, (float)pow(num1, num2)); popDataOperations(&headOperation); break;
+                        case 'q': pushData(&headData, (float)sqrt(num1)); popDataOperations(&headOperation); break; //sqrt
+                        case 't': pushData(&headData, (float)tan(num1)); popDataOperations(&headOperation); break; //tg
+                        case 'c': pushData(&headData, (float)cos(num1)); popDataOperations(&headOperation); break; //cos
+                        case 'g': pushData(&headData, (float)1 / tan(num1)); popDataOperations(&headOperation); break; // ctg
+                        case 's': pushData(&headData, (float)sin(num1)); popDataOperations(&headOperation); break; //sin
+                        case 'o': pushData(&headData, (float)atan(num1)); popDataOperations(&headOperation); break; //arctg
+                        case 'i': pushData(&headData, (float)atan(((M_PI_2 - atan(num1)) * 180) / M_PI)); popDataOperations(&headOperation); break; //arcctg
+                        case 'u': pushData(&headData, (float)asin(num1)); popDataOperations(&headOperation); break; //arcsin
+                        case 'p': pushData(&headData, (float)acos(num1)); popDataOperations(&headOperation); break; //arccos
+                        } 
+                    }
+                   
+                    pushDataOperations(&headOperation, data[j]);
+                }
+                else if (priority(headOperation,data[j]) == 0) {
+                    pushDataOperations(&headOperation, data[j]);
                 }
             }
             
         }
         else if (isdigit(data[j])) {
-            pushData(&headData, data[j]);
+            for (k = j; isdigit(data[k]); k++) pushData(&headData, data[k]);
+            for (s = 0; s < k; s++) digitTmp[s] = popData(&headData);
+            char temp = 0;
+            size_t kl = 0, ka = strlen(digitTmp) - 1;
+
+            while (kl < ka)
+            {
+                temp = digitTmp[kl];
+                digitTmp[kl] = digitTmp[ka];
+                digitTmp[ka] = temp;
+                kl++;
+                ka--;
+            }
+            j += strlen(digitTmp) - 1;
+
+            pushData(&headData, digitTmp);
         }
         else {
             printf("Invalid expression");
@@ -130,32 +270,29 @@ void parseData(char* data) {
         
     }
 }
+char *reverse(char* str) {
+    char temp = 0;
+    size_t i = 0, j = strlen(str) - 1;;
+    
+    
 
-int count(float f, float t, char operation) {
-    switch (operation) {
-    case '+': return f + t; break;
-    case '-': return f - t; break;
-    case '*': return f * t; break;
-    case '/': return f / t; break;
-    case '^': return pow(f , t); break;
-    case 'q': return sqrt(f); break; //sqrt
-    case 't': return tan(f); break; //tg
-    case 'c': return cos(f); break; //cos
-    case 's': return sin(f); break; //sin
-    case 'o': return atan(f); break; //arctg
-    case 'i': return ((M_PI_2 - atan(f)) * 180) / M_PI; break; //arcctg
-    case 'u': return asin(f); break; //arcsin
-    case 'p': return acos(f); break; //arccos
+    while (i < j)
+    {
+        temp = str[i];
+        str[i] = str[j];
+        str[j] = temp;
+        i++;
+        j--;
     }
+    return str;
 }
 
 
 
+
 int main() {
-    Data* headData = NULL;
-    DataOperations* headOperation = NULL;
-    char data[256];
-    scanf("%s", &data);
+    char data[256] = {0};
+    gets(data);
     parseData(data);
     return 0;
 }
