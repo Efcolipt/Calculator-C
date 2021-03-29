@@ -270,25 +270,6 @@ void parseData(char* data) {
         
     }
 }
-char *reverse(char* str) {
-    char temp = 0;
-    size_t i = 0, j = strlen(str) - 1;;
-    
-    
-
-    while (i < j)
-    {
-        temp = str[i];
-        str[i] = str[j];
-        str[j] = temp;
-        i++;
-        j--;
-    }
-    return str;
-}
-
-
-
 
 int main() {
     char data[256] = {0};
